@@ -41,8 +41,7 @@ export const useFetchInfinite = <Data, Error>(
     if (typeof page === "number") {
       // reload by page
       promisesRef.current[page] = api<Data>(getUri(page, data));
-      void handlePromise(promisesRef.current, ++freshPromiseId.current);
-      return;
+      return handlePromise(promisesRef.current, ++freshPromiseId.current);
     }
     // reload all
     promisesRef.current = [];
@@ -54,7 +53,7 @@ export const useFetchInfinite = <Data, Error>(
       setData([]);
       setError(null);
     }
-    void handlePromise(promisesRef.current, ++freshPromiseId.current);
+    return handlePromise(promisesRef.current, ++freshPromiseId.current);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps

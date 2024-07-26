@@ -10,46 +10,43 @@ export const useFetch = <Data, Error>(
 ) => {
   const keyRef = useRef<string | null>(null);
   const freshPromiseId = useRef(0);
-  const timeRef = useRef(0);
 
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const [time, setTime] = useState(0);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const load = async (id: number) => {
+    if (uri === null) {
+      setData(null);
+      setError(null);
+      return;
+    }
+
+    if (!option.keepPreviousData) {
+      setData(null);
+      setError(null);
+    }
+    try {
+      const data = await api<Data>(uri);
+      if (freshPromiseId.current === id) {
+        setData(data);
+        setError(null);
+        option.onSuccess?.(data);
+      }
+    } catch (error) {
+      if (freshPromiseId.current === id) {
+        setData(null);
+        setError(error as Error);
+        option.onError?.(error as Error);
+      }
+    }
+  };
+
   useLayoutEffect(() => {
-    if (keyRef.current !== key || timeRef.current !== time) {
+    if (keyRef.current !== key) {
       keyRef.current = key;
-      timeRef.current = time;
-
-      if (uri === null) {
-        setData(null);
-        setError(null);
-        return;
-      }
-
-      if (!option.keepPreviousData) {
-        setData(null);
-        setError(null);
-      }
-      const id = ++freshPromiseId.current;
-      api<Data>(uri)
-        .then((data) => {
-          if (freshPromiseId.current === id) {
-            setData(data);
-            setError(null);
-            option.onSuccess?.(data);
-          }
-        })
-        .catch((error) => {
-          if (freshPromiseId.current === id) {
-            setData(null);
-            setError(error as Error);
-            option.onError?.(error as Error);
-          }
-        });
+      void load(++freshPromiseId.current);
     }
   });
 
-  return { data, error, refresh: () => setTime((p) => p + 1) };
+  return { data, error, refresh: () => load(++freshPromiseId.current) };
 };
