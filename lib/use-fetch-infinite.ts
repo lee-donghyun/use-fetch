@@ -11,7 +11,7 @@ export const useFetchInfinite = <Data, Error>(
   const defulatSize = option?.defaultSize ?? 0;
   const keepPreviousData = option?.keepPreviousData ?? false;
 
-  const appliedName = useRef(name);
+  const appliedNameRef = useRef(name);
   const promisesRef = useRef<Promise<Data>[]>([]);
   const freshPromiseId = useRef(0);
 
@@ -70,8 +70,10 @@ export const useFetchInfinite = <Data, Error>(
     if (changed) {
       void handlePromise(promisesRef.current, ++freshPromiseId.current);
     }
-    if (appliedName.current !== name) {
-      appliedName.current = name;
+    if (appliedNameRef.current !== name) {
+      appliedNameRef.current = name;
+      promisesRef.current = [];
+      ++freshPromiseId.current;
       setSize(defulatSize);
       setData([]);
       setError(null);
