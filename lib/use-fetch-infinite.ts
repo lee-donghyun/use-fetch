@@ -57,6 +57,18 @@ export const useFetchInfinite = <Data, Error>(
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
+    if (appliedNameRef.current !== name) {
+      // make state fresh as first mount
+      appliedNameRef.current = name;
+      promisesRef.current = [];
+      ++freshPromiseId.current;
+      setSize(defulatSize);
+      if (!keepPreviousData) {
+        setData([]);
+        setError(null);
+      }
+      return;
+    }
     let changed = false;
     while (promisesRef.current.length < size) {
       const key = getKey(promisesRef.current.length, data);
@@ -69,17 +81,6 @@ export const useFetchInfinite = <Data, Error>(
     }
     if (changed) {
       void handlePromise(promisesRef.current, ++freshPromiseId.current);
-    }
-    if (appliedNameRef.current !== name) {
-      // make state fresh as first mount
-      appliedNameRef.current = name;
-      promisesRef.current = [];
-      ++freshPromiseId.current;
-      setSize(defulatSize);
-      if (!keepPreviousData) {
-        setData([]);
-        setError(null);
-      }
     }
   });
 
