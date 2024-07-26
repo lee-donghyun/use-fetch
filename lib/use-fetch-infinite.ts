@@ -19,6 +19,8 @@ export const useFetchInfinite = <Data, Error>(
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
+  const forceRerender = () => setData((data) => [...data]);
+
   const handlePromise = async (promise: Promise<Data>[], id: number) => {
     try {
       const data = await Promise.all(promise);
@@ -66,6 +68,9 @@ export const useFetchInfinite = <Data, Error>(
       if (!keepPreviousData) {
         setData([]);
         setError(null);
+      } else {
+        // size is not changed, but need to reload
+        forceRerender();
       }
       return;
     }
