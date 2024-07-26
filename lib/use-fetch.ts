@@ -25,9 +25,11 @@ export const useFetch = <Data, Error>(
         api<Data>(key)
           .then((data) => {
             setData(data);
+            setError(null);
             option.onSuccess?.(data);
           })
           .catch((error) => {
+            setData(null);
             setError(error);
             option.onError?.(error);
           });
