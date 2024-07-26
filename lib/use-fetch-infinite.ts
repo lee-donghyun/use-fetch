@@ -71,12 +71,15 @@ export const useFetchInfinite = <Data, Error>(
       void handlePromise(promisesRef.current, ++freshPromiseId.current);
     }
     if (appliedNameRef.current !== name) {
+      // make state fresh as first mount
       appliedNameRef.current = name;
       promisesRef.current = [];
       ++freshPromiseId.current;
       setSize(defulatSize);
-      setData([]);
-      setError(null);
+      if (!keepPreviousData) {
+        setData([]);
+        setError(null);
+      }
     }
   });
 
