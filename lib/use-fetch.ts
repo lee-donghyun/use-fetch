@@ -1,11 +1,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { api } from "./helper";
-import { Option, Uri } from "./type";
+import { Option } from "./type";
 
 export const useFetch = <Data, Error>(
-  key: string,
-  uri: Uri | null,
+  key: string | null,
+  fetcher: (key: string) => Promise<Data>,
   option: Option<Data, Error> = { keepPreviousData: true },
 ) => {
   const keyRef = useRef<string | null>(null);
@@ -15,7 +14,7 @@ export const useFetch = <Data, Error>(
   const [error, setError] = useState<Error | null>(null);
 
   const load = async (id: number) => {
-    if (uri === null) {
+    if (key === null) {
       setData(null);
       setError(null);
       return;
@@ -26,7 +25,7 @@ export const useFetch = <Data, Error>(
       setError(null);
     }
     try {
-      const data = await api<Data>(uri);
+      const data = await fetcher(key);
       if (freshPromiseId.current === id) {
         setData(data);
         setError(null);
