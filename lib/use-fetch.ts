@@ -1,10 +1,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { Key, Option } from "./type";
+
 import { api } from "./helper";
+import { Key, Option } from "./type";
 
 export const useFetch = <Data, Error>(
   key: Key | null,
-  option: Option<Data, Error> = { keepPreviousData: true }
+  option: Option<Data, Error> = { keepPreviousData: true },
 ) => {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -30,8 +31,8 @@ export const useFetch = <Data, Error>(
           })
           .catch((error) => {
             setData(null);
-            setError(error);
-            option.onError?.(error);
+            setError(error as Error);
+            option.onError?.(error as Error);
           });
       }
     }

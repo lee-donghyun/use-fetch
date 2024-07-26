@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { Key, Option } from "./type";
+
 import { api } from "./helper";
+import { Key, Option } from "./type";
 
 export const useFetchInfinite = <Data, Error>(
   name: string,
   getKey: (page: number, data: Data[]) => Key,
-  option?: Option<Data[], Error> & { defaultSize?: number }
+  option?: Option<Data[], Error> & { defaultSize?: number },
 ) => {
   const defulatSize = option?.defaultSize ?? 0;
   const keepPreviousData = option?.keepPreviousData ?? false;
@@ -17,25 +18,26 @@ export const useFetchInfinite = <Data, Error>(
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
-  const handlePromise = (promise: Promise<Data>[]) => {
-    Promise.all(promise)
-      .then((data) => {
-        setData(data);
-        setError(null);
-        option?.onSuccess?.(data);
-      })
-      .catch((error) => {
-        setError(error);
-        option?.onError?.(error);
-      });
+  const handlePromise = async (promise: Promise<Data>[]) => {
+    try {
+      const data = await Promise.all(promise);
+      setData(data);
+      setError(null);
+      option?.onSuccess?.(data);
+    } catch (error) {
+      setError(error as Error);
+      option?.onError?.(error as Error);
+    }
   };
 
   const reload = (page?: number) => {
     if (typeof page === "number") {
+      // reload by page
       promisesRef.current[page] = api<Data>(getKey(page, data));
-      handlePromise(promisesRef.current);
+      void handlePromise(promisesRef.current);
       return;
     }
+    // reload all
     promisesRef.current = [];
     while (promisesRef.current.length < size) {
       const key = getKey(promisesRef.current.length, data);
@@ -45,7 +47,7 @@ export const useFetchInfinite = <Data, Error>(
       setData([]);
       setError(null);
     }
-    handlePromise(promisesRef.current);
+    void handlePromise(promisesRef.current);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,7 +63,7 @@ export const useFetchInfinite = <Data, Error>(
       changed = true;
     }
     if (changed) {
-      handlePromise(promisesRef.current);
+      void handlePromise(promisesRef.current);
     }
     if (appliedName.current !== name) {
       appliedName.current = name;

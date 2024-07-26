@@ -1,0 +1,9 @@
+{
+  "target": "ESNext",
+  "module": "ESNext",
+  "include": ["lib"],
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "strictNullChecks": true
+  }
+}
