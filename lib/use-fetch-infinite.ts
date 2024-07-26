@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { api } from "./helper";
 import { Key, Option, Uri } from "./type";
+import { useRerender } from "./useRerender";
 
 export const useFetchInfinite = <Data, Error>(
   key: Key,
@@ -19,9 +20,13 @@ export const useFetchInfinite = <Data, Error>(
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
-  const forceRerender = () => setData((data) => [...data]);
+  const forceRerender = useRerender();
 
   const handlePromise = async (promise: Promise<Data>[], id: number) => {
+    if (!keepPreviousData) {
+      setData(() => []);
+      setError(() => null);
+    }
     try {
       const data = await Promise.all(promise);
       if (freshPromiseId.current === id) {
@@ -49,10 +54,6 @@ export const useFetchInfinite = <Data, Error>(
       const uri = getUri(promisesRef.current.length, data);
       promisesRef.current.push(api<Data>(uri));
     }
-    if (!keepPreviousData) {
-      setData([]);
-      setError(null);
-    }
     return handlePromise(promisesRef.current, ++freshPromiseId.current);
   };
 
@@ -64,13 +65,8 @@ export const useFetchInfinite = <Data, Error>(
       promisesRef.current = [];
       ++freshPromiseId.current;
       setSize(defaultSize);
-      if (!keepPreviousData) {
-        setData([]);
-        setError(null);
-      } else {
-        // size is not changed, but need to reload
-        forceRerender();
-      }
+      // size is not changed, but need to reload
+      forceRerender();
       return;
     }
     let changed = false;
