@@ -8,14 +8,14 @@ export const useFetchInfinite = <Data, Error>(
   getUri: (page: number, data: Data[]) => Uri,
   option?: Option<Data[], Error> & { defaultSize?: number },
 ) => {
-  const defulatSize = option?.defaultSize ?? 0;
+  const defaultSize = option?.defaultSize ?? 0;
   const keepPreviousData = option?.keepPreviousData ?? false;
 
   const KeyRef = useRef(key);
   const promisesRef = useRef<Promise<Data>[]>([]);
   const freshPromiseId = useRef(0);
 
-  const [size, setSize] = useState(defulatSize);
+  const [size, setSize] = useState(defaultSize);
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
@@ -64,7 +64,7 @@ export const useFetchInfinite = <Data, Error>(
       KeyRef.current = key;
       promisesRef.current = [];
       ++freshPromiseId.current;
-      setSize(defulatSize);
+      setSize(defaultSize);
       if (!keepPreviousData) {
         setData([]);
         setError(null);
