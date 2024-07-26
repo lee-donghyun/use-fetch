@@ -5,12 +5,15 @@ import { api } from "./helper";
 export const useFetchInfinite = <Data, Error>(
   name: string,
   getKey: (page: number, data: Data[]) => Key,
-  option: Option<Data[], Error> & { defaultSize?: number } = { defaultSize: 0 }
+  option?: Option<Data[], Error> & { defaultSize?: number }
 ) => {
+  const defulatSize = option?.defaultSize ?? 0;
+  const keepPreviousData = option?.keepPreviousData ?? false;
+
   const appliedName = useRef(name);
   const promisesRef = useRef<Promise<Data>[]>([]);
 
-  const [size, setSize] = useState(option.defaultSize ?? 0);
+  const [size, setSize] = useState(defulatSize);
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
@@ -19,23 +22,28 @@ export const useFetchInfinite = <Data, Error>(
       .then((data) => {
         setData(data);
         setError(null);
-        option.onSuccess?.(data);
+        option?.onSuccess?.(data);
       })
       .catch((error) => {
         setError(error);
-        option.onError?.(error);
+        option?.onError?.(error);
       });
   };
 
-  const reset = () => {
-    promisesRef.current = [];
-    if (!option.keepPreviousData) {
-      setData([]);
-      setError(null);
+  const reload = (page?: number) => {
+    if (typeof page === "number") {
+      promisesRef.current[page] = api<Data>(getKey(page, data));
+      handlePromise(promisesRef.current);
+      return;
     }
+    promisesRef.current = [];
     while (promisesRef.current.length < size) {
       const key = getKey(promisesRef.current.length, data);
       promisesRef.current.push(api<Data>(key));
+    }
+    if (!keepPreviousData) {
+      setData([]);
+      setError(null);
     }
     handlePromise(promisesRef.current);
   };
@@ -57,7 +65,7 @@ export const useFetchInfinite = <Data, Error>(
     }
     if (appliedName.current !== name) {
       appliedName.current = name;
-      setSize(option.defaultSize ?? 0);
+      setSize(defulatSize);
       setData([]);
       setError(null);
     }
@@ -66,7 +74,7 @@ export const useFetchInfinite = <Data, Error>(
   return {
     data,
     error,
-    reload: reset,
+    reload,
     size,
     setSize,
     isLoading: data.length != size && error === null,
