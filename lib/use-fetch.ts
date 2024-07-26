@@ -11,6 +11,7 @@ export const useFetch = <Data, Error>(
   const [error, setError] = useState<Error | null>(null);
   const [time, setTime] = useState(0);
   const keyRef = useRef<Key | null>(null);
+  const freshPromiseId = useRef(0);
   const timeRef = useRef(0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -23,16 +24,21 @@ export const useFetch = <Data, Error>(
         setError(null);
       }
       if (key) {
+        const id = ++freshPromiseId.current;
         api<Data>(key)
           .then((data) => {
-            setData(data);
-            setError(null);
-            option.onSuccess?.(data);
+            if (freshPromiseId.current === id) {
+              setData(data);
+              setError(null);
+              option.onSuccess?.(data);
+            }
           })
           .catch((error) => {
-            setData(null);
-            setError(error as Error);
-            option.onError?.(error as Error);
+            if (freshPromiseId.current === id) {
+              setData(null);
+              setError(error as Error);
+              option.onError?.(error as Error);
+            }
           });
       }
     }

@@ -13,20 +13,25 @@ export const useFetchInfinite = <Data, Error>(
 
   const appliedName = useRef(name);
   const promisesRef = useRef<Promise<Data>[]>([]);
+  const freshPromiseId = useRef(0);
 
   const [size, setSize] = useState(defulatSize);
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
-  const handlePromise = async (promise: Promise<Data>[]) => {
+  const handlePromise = async (promise: Promise<Data>[], id: number) => {
     try {
       const data = await Promise.all(promise);
-      setData(data);
-      setError(null);
-      option?.onSuccess?.(data);
+      if (freshPromiseId.current === id) {
+        setData(data);
+        setError(null);
+        option?.onSuccess?.(data);
+      }
     } catch (error) {
-      setError(error as Error);
-      option?.onError?.(error as Error);
+      if (freshPromiseId.current === id) {
+        setError(error as Error);
+        option?.onError?.(error as Error);
+      }
     }
   };
 
@@ -34,7 +39,7 @@ export const useFetchInfinite = <Data, Error>(
     if (typeof page === "number") {
       // reload by page
       promisesRef.current[page] = api<Data>(getKey(page, data));
-      void handlePromise(promisesRef.current);
+      void handlePromise(promisesRef.current, ++freshPromiseId.current);
       return;
     }
     // reload all
@@ -47,7 +52,7 @@ export const useFetchInfinite = <Data, Error>(
       setData([]);
       setError(null);
     }
-    void handlePromise(promisesRef.current);
+    void handlePromise(promisesRef.current, ++freshPromiseId.current);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,7 +68,7 @@ export const useFetchInfinite = <Data, Error>(
       changed = true;
     }
     if (changed) {
-      void handlePromise(promisesRef.current);
+      void handlePromise(promisesRef.current, ++freshPromiseId.current);
     }
     if (appliedName.current !== name) {
       appliedName.current = name;
@@ -73,12 +78,5 @@ export const useFetchInfinite = <Data, Error>(
     }
   });
 
-  return {
-    data,
-    error,
-    reload,
-    size,
-    setSize,
-    isLoading: data.length != size && error === null,
-  };
+  return { data, error, reload, size, setSize };
 };
