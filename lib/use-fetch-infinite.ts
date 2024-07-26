@@ -1,17 +1,17 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { api } from "./helper";
-import { Key, Option } from "./type";
+import { Key, Option, Uri } from "./type";
 
 export const useFetchInfinite = <Data, Error>(
-  name: string,
-  getKey: (page: number, data: Data[]) => Key,
+  key: Key,
+  getUri: (page: number, data: Data[]) => Uri,
   option?: Option<Data[], Error> & { defaultSize?: number },
 ) => {
   const defulatSize = option?.defaultSize ?? 0;
   const keepPreviousData = option?.keepPreviousData ?? false;
 
-  const appliedNameRef = useRef(name);
+  const KeyRef = useRef(key);
   const promisesRef = useRef<Promise<Data>[]>([]);
   const freshPromiseId = useRef(0);
 
@@ -38,15 +38,15 @@ export const useFetchInfinite = <Data, Error>(
   const reload = (page?: number) => {
     if (typeof page === "number") {
       // reload by page
-      promisesRef.current[page] = api<Data>(getKey(page, data));
+      promisesRef.current[page] = api<Data>(getUri(page, data));
       void handlePromise(promisesRef.current, ++freshPromiseId.current);
       return;
     }
     // reload all
     promisesRef.current = [];
     while (promisesRef.current.length < size) {
-      const key = getKey(promisesRef.current.length, data);
-      promisesRef.current.push(api<Data>(key));
+      const uri = getUri(promisesRef.current.length, data);
+      promisesRef.current.push(api<Data>(uri));
     }
     if (!keepPreviousData) {
       setData([]);
@@ -57,9 +57,9 @@ export const useFetchInfinite = <Data, Error>(
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
-    if (appliedNameRef.current !== name) {
+    if (KeyRef.current !== key) {
       // make state fresh as first mount
-      appliedNameRef.current = name;
+      KeyRef.current = key;
       promisesRef.current = [];
       ++freshPromiseId.current;
       setSize(defulatSize);
@@ -71,8 +71,8 @@ export const useFetchInfinite = <Data, Error>(
     }
     let changed = false;
     while (promisesRef.current.length < size) {
-      const key = getKey(promisesRef.current.length, data);
-      promisesRef.current.push(api<Data>(key));
+      const uri = getUri(promisesRef.current.length, data);
+      promisesRef.current.push(api<Data>(uri));
       changed = true;
     }
     while (promisesRef.current.length > size) {

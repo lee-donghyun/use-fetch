@@ -1,13 +1,14 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { api } from "./helper";
-import { Key, Option } from "./type";
+import { Option, Uri } from "./type";
 
 export const useFetch = <Data, Error>(
-  key: Key | null,
+  key: string,
+  uri: Uri | null,
   option: Option<Data, Error> = { keepPreviousData: true },
 ) => {
-  const keyRef = useRef<Key | null>(null);
+  const keyRef = useRef<string | null>(null);
   const freshPromiseId = useRef(0);
   const timeRef = useRef(0);
 
@@ -21,7 +22,7 @@ export const useFetch = <Data, Error>(
       keyRef.current = key;
       timeRef.current = time;
 
-      if (key === null) {
+      if (uri === null) {
         setData(null);
         setError(null);
         return;
@@ -32,7 +33,7 @@ export const useFetch = <Data, Error>(
         setError(null);
       }
       const id = ++freshPromiseId.current;
-      api<Data>(key)
+      api<Data>(uri)
         .then((data) => {
           if (freshPromiseId.current === id) {
             setData(data);

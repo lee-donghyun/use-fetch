@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect } from "react";
 
-export const api = <T>(key: string) =>
-  fetch(key).then((res) => {
+import { Uri } from "./type";
+
+export const api = <T>(key: Uri) =>
+  fetch(key[0]).then((res) => {
     if (!res.ok) {
       throw new Error("Failed to fetch");
     }
