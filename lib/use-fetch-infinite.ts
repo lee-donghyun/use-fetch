@@ -5,9 +5,7 @@ import { api } from "./helper";
 export const useFetchInfinite = <Data, Error>(
   name: string,
   getKey: (page: number, data: Data[]) => Key,
-  option: Omit<Option<Data[], Error>, "keepPreviousData"> & {
-    defaultSize?: number;
-  } = { defaultSize: 0 }
+  option: Option<Data[], Error> & { defaultSize?: number } = { defaultSize: 0 }
 ) => {
   const appliedName = useRef(name);
   const promisesRef = useRef<Promise<Data>[]>([]);
@@ -15,6 +13,32 @@ export const useFetchInfinite = <Data, Error>(
   const [size, setSize] = useState(option.defaultSize ?? 0);
   const [data, setData] = useState<Data[]>([]);
   const [error, setError] = useState<Error | null>(null);
+
+  const handlePromise = (promise: Promise<Data>[]) => {
+    Promise.all(promise)
+      .then((data) => {
+        setData(data);
+        setError(null);
+        option.onSuccess?.(data);
+      })
+      .catch((error) => {
+        setError(error);
+        option.onError?.(error);
+      });
+  };
+
+  const reset = () => {
+    promisesRef.current = [];
+    if (!option.keepPreviousData) {
+      setData([]);
+      setError(null);
+    }
+    while (promisesRef.current.length < size) {
+      const key = getKey(promisesRef.current.length, data);
+      promisesRef.current.push(api<Data>(key));
+    }
+    handlePromise(promisesRef.current);
+  };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
@@ -29,17 +53,8 @@ export const useFetchInfinite = <Data, Error>(
       changed = true;
     }
     if (changed) {
-      Promise.all(promisesRef.current)
-        .then((data) => {
-          setData(data);
-          option.onSuccess?.(data);
-        })
-        .catch((error) => {
-          setError(error);
-          option.onError?.(error);
-        });
+      handlePromise(promisesRef.current);
     }
-
     if (appliedName.current !== name) {
       appliedName.current = name;
       setSize(option.defaultSize ?? 0);
@@ -51,6 +66,7 @@ export const useFetchInfinite = <Data, Error>(
   return {
     data,
     error,
+    reload: reset,
     size,
     setSize,
     isLoading: data.length != size && error === null,
