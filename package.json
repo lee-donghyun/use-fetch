@@ -4,9 +4,12 @@
   "main": "lib/index.ts",
   "type": "module",
   "directories": {
-    "lib": "lib"
+    "lib": "lib",
+    "test": "test"
   },
-  "scripts": {},
+  "scripts": {
+    "test": "vitest"
+  },
   "keywords": [
     "use-fetch",
     "react",
@@ -21,9 +24,14 @@
     "react": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
     "@types/react": "^18.3.3",
     "eslint": "^9.7.0",
     "eslint-config-react-app-essentials": "^12.0.0",
-    "prettier": "^3.3.3"
+    "jsdom": "^24.1.1",
+    "prettier": "^3.3.3",
+    "vitest": "^2.0.4"
   }
 }
