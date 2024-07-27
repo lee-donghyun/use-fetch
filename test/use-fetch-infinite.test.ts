@@ -276,3 +276,355 @@ describe("useFetchInfinite", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("useFetchInfinite - setSize", () => {
+  let fetcher;
+
+  beforeEach(() => {
+    fetcher = vi.fn();
+  });
+
+  it("should initialize with default size value", () => {
+    const { result } = renderHook(() =>
+      useFetchInfinite("null", fetcher, { defaultSize: 3 }),
+    );
+    expect(result.current.size).toBe(3);
+  });
+
+  it("should increase the number of fetches when size is increased", async () => {
+    fetcher.mockResolvedValue({ message: "success" });
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 2 }),
+    );
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    });
+
+    act(() => {
+      result.current.setSize(4);
+    });
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  it("should decrease the number of fetches when size is decreased", async () => {
+    fetcher.mockResolvedValue({ message: "success" });
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 4 }),
+    );
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(4);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  it("should fetch data successfully with increased size", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 1 }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([[{ message: "success" }]]);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+  });
+
+  it("should fetch data successfully with decreased size", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 3 }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        [{ message: "success" }],
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+  });
+
+  it("should trigger fetch on size increase", async () => {
+    fetcher.mockResolvedValue({ message: "success" });
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 1 }),
+    );
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      result.current.setSize(3);
+    });
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  it("should trigger fetch on size decrease", async () => {
+    fetcher.mockResolvedValue({ message: "success" });
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 3 }),
+    );
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(3);
+    });
+
+    act(() => {
+      result.current.setSize(1);
+    });
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  it("should handle setSize with concurrent fetches", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 2 }),
+    );
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    });
+
+    act(() => {
+      result.current.setSize(3);
+      result.current.setSize(4);
+    });
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  it("should handle setSize with key change", async () => {
+    const data1 = [{ message: "success1" }];
+    const data2 = [{ message: "success2" }];
+    const data3 = [{ message: "success3" }];
+    fetcher.mockResolvedValueOnce(data1).mockResolvedValueOnce(data2);
+
+    const { result, rerender } = renderHook(
+      ({ key }) => useFetchInfinite(key, fetcher, { defaultSize: 2 }),
+      { initialProps: { key: "key1" } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([data1, data2]);
+    });
+
+    fetcher
+      .mockResolvedValueOnce(data1)
+      .mockResolvedValueOnce(data2)
+      .mockResolvedValueOnce(data3);
+
+    rerender({ key: "key2" });
+
+    act(() => {
+      result.current.setSize(3);
+    });
+    await waitFor(() => {
+      expect(result.current.size).toBe(3);
+    });
+    await waitFor(() => {
+      expect(result.current.data).toEqual([data1, data2, data3]);
+    });
+  });
+
+  it("should handle setSize during fetch", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 1 }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([[{ message: "success" }]]);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+  });
+
+  it("should handle onSuccess callback with setSize", async () => {
+    const onSuccess = vi.fn();
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { onSuccess, defaultSize: 1 }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([[{ message: "success" }]]);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith([
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+  });
+
+  it("should handle onError callback with setSize", async () => {
+    const onError = vi.fn();
+    const error = new Error("fetch error");
+    fetcher.mockRejectedValue(error);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { onError, defaultSize: 1 }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.error).toEqual(error);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(error);
+    });
+  });
+
+  it("should keep previous data when keepPreviousData is true with setSize", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, {
+        keepPreviousData: true,
+        defaultSize: 1,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([[{ message: "success" }]]);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+  });
+
+  it("should not keep previous data when keepPreviousData is false with setSize", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, {
+        keepPreviousData: false,
+        defaultSize: 1,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([[{ message: "success" }]]);
+    });
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([
+        [{ message: "success" }],
+        [{ message: "success" }],
+      ]);
+    });
+  });
+
+  it("should cleanup after unmount with setSize", async () => {
+    const data = [{ message: "success" }];
+    fetcher.mockResolvedValue(data);
+
+    const { unmount, result } = renderHook(() =>
+      useFetchInfinite("key", fetcher, { defaultSize: 1 }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual([[{ message: "success" }]]);
+    });
+
+    unmount();
+
+    act(() => {
+      result.current.setSize(2);
+    });
+
+    await act(async () => {
+      await new Promise((res) => res(0));
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
