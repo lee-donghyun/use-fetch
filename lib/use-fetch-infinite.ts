@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
+import { useIsomorphicLayoutEffect } from "./helper";
 import { Key, Option } from "./type";
 import { useRerender } from "./use-rerender";
 
@@ -55,8 +56,7 @@ export const useFetchInfinite = <Data, Error>(
     return handlePromise(promisesRef.current, ++freshPromiseId.current);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (keyRef.current !== key) {
       // make state fresh as first mount
       keyRef.current = key;

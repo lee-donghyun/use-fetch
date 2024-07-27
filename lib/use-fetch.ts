@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
+import { useIsomorphicLayoutEffect } from "./helper";
 import { Option } from "./type";
 
 export const useFetch = <Data, Error>(
@@ -40,7 +41,7 @@ export const useFetch = <Data, Error>(
     }
   };
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (keyRef.current !== key) {
       keyRef.current = key;
       void load(++freshPromiseId.current);
